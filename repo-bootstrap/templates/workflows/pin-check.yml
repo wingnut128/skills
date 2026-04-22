@@ -3,14 +3,14 @@
 #
 # Defense-in-depth against action-tag force-push attacks
 # (e.g., aquasecurity/trivy-action, March 2026).
+#
+# Note: runs on every PR (not just workflow-touching ones) so it can
+# serve as a required status check without hanging unrelated PRs.
 # ===================================================================
 name: Pin Check
 
 on:
   pull_request:
-    paths:
-      - '.github/workflows/**'
-      - '.github/actions/**'
 
 permissions:
   contents: read

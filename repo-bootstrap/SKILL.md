@@ -375,8 +375,10 @@ Runs `pinact` on every PR that touches `.github/workflows/**` or `.github/action
 To apply:
 
 1. Copy `templates/workflows/pin-check.yml` → `.github/workflows/pin-check.yml`. No substitutions.
-2. Add `Pin Check / pinact` to the required status checks on `main` (see § 4c Branch protection).
+2. Add `Verify all actions pinned by SHA` to the required status checks on `main` (see § 4c Branch protection). The context name is the job's `name:` field, not the workflow name.
 3. Before the first merge, run `pinact run` locally to SHA-pin any tag-pinned actions already in the repo, otherwise the check will fail on its own introduction PR.
+
+**Gotcha — required checks + `paths:` filters.** If pin-check (or any other required check) uses a `paths:` filter on `pull_request`, GitHub leaves PRs that don't match the filter in a permanent "expected — waiting for status" state and they cannot be merged. The template removes the `paths:` filter from pin-check for exactly this reason. If you add a `paths:` filter back for CI-cost reasons, do not mark the check required — or switch to a branch ruleset with "only when reported" semantics (see `references/github-rulesets.md`).
 
 ### Redundant workflows to drop
 
