@@ -2,16 +2,8 @@ name: Lint
 
 on:
   pull_request:
-    paths:
-      - '**/*.md'
-      - '.markdownlint-cli2.jsonc'
-      - '.github/workflows/lint.yml'
   push:
     branches: [main]
-    paths:
-      - '**/*.md'
-      - '.markdownlint-cli2.jsonc'
-      - '.github/workflows/lint.yml'
 
 permissions:
   contents: read
