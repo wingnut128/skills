@@ -10,6 +10,7 @@ Apply a consistent baseline of security controls and governance files to a fresh
 ## When this skill fires
 
 Trigger on requests like:
+
 - "Set up a new repo"
 - "Bootstrap this repo"
 - "Add branch protection"
@@ -59,6 +60,7 @@ ls -la LICENSE* SECURITY.md CODEOWNERS .github/CODEOWNERS .gitignore .github/dep
 ```
 
 Parse the remote URL:
+
 - Host `github.com` → forge = `github`, use `gh` CLI for API calls
 - Any other host → forge = `forgejo` (or Gitea — same API), use `curl` against `<host>/api/v1/` with a `FORGEJO_TOKEN` env var
 
@@ -95,6 +97,7 @@ If the user is clearly working solo on a personal repo, don't belabor the approv
 ### 4a. Baseline files
 
 Pull each file from `templates/` in this skill, substituting placeholders:
+
 - `{{YEAR}}` → current year
 - `{{OWNER}}` → copyright holder (from git config user.name)
 - `{{REPO}}` → repo name
@@ -122,6 +125,7 @@ Commit these to a feature branch and open a PR. The branch name convention: `rep
 Set up **release-plz** (Rust) or **release-please** (Node/Python/Go) to replace hand-rolled version-bump + CHANGELOG flows. The tool keeps an open Release PR that auto-bumps version and regenerates CHANGELOG from conventional commits; merging the PR creates a tag + draft GitHub Release. A separate tag-triggered workflow builds binaries, uploads them, and un-drafts the release.
 
 **Skip this step entirely when any of the following are true:**
+
 - No versioned distribution — internal service, CI-deployed app, personal scratch tool
 - Fork of an upstream project that owns its own releases
 - Existing working release tool already wired (goreleaser, changesets, cargo-release, semantic-release) — don't replace it unless the user asks
@@ -180,6 +184,7 @@ If no template exists yet for the user's stack, write the workflow by analogy to
 ### 4c. Branch protection + account toggles
 
 For the details of the API calls, see:
+
 - `references/github-branch-protection.md`
 - `references/github-audit.md` (read-only audit control list — used by § Audit mode)
 - `references/github-rulesets.md` (upgrade path — see below)
@@ -190,6 +195,7 @@ For the details of the API calls, see:
 High-level:
 
 **GitHub:**
+
 1. Discover which workflow jobs produce status check contexts (parse `.github/workflows/*.yml`; each job's `name:` field maps to a context). If no workflows exist yet, pass `required_status_checks: null` — don't send an empty contexts array.
 2. `PUT /repos/{owner}/{repo}/branches/main/protection` with:
    - `required_status_checks`: `strict: false`, contexts from step 1 plus any the user adds (or `null` if no workflows)
@@ -206,6 +212,7 @@ High-level:
 10. `PATCH /repos/{owner}/{repo}` with `allow_auto_merge: true` and `delete_branch_on_merge: true`
 
 **Forgejo:**
+
 1. Discover which workflow jobs produce required checks (parse `.forgejo/workflows/*.yml` OR `.github/workflows/*.yml` if Forgejo Actions is configured to read from there).
 2. `POST /api/v1/repos/{owner}/{repo}/branch_protections` (or PATCH if one already exists) with:
    - `rule_name: main`
@@ -222,6 +229,7 @@ High-level:
    See `references/forgejo-branch-protection.md` for the full payload.
 
 Things to skip on Forgejo and tell the user:
+
 - No `fork-pr-contributor-approval` equivalent — Forgejo Actions secrets don't have a gating policy in the same shape.
 - No private security advisories — `SECURITY-forgejo.md` points to an email or the repo's issue tracker.
 - Dependabot alerts don't exist on Forgejo. Renovate running as a scheduled workflow is the nearest equivalent; the skill writes `renovate.json` but **does not** install a runner — the user has to wire up Renovate themselves or install the Forgejo bot.
@@ -231,6 +239,7 @@ Things to skip on Forgejo and tell the user:
 After the API calls, read back the state:
 
 **GitHub:**
+
 ```bash
 gh api repos/{owner}/{repo}/branches/main/protection | jq '{required_status_checks, required_pull_request_reviews, enforce_admins, required_conversation_resolution, allow_force_pushes, allow_deletions}'
 gh api repos/{owner}/{repo}/actions/permissions/fork-pr-contributor-approval
@@ -242,6 +251,7 @@ gh api repos/{owner}/{repo}/private-vulnerability-reporting
 ```
 
 **Forgejo:**
+
 ```bash
 curl -H "Authorization: token $FORGEJO_TOKEN" "$FORGE_URL/api/v1/repos/$OWNER/$REPO/branch_protections"
 ```
@@ -251,24 +261,28 @@ Report what's now in place vs what was skipped, in a short summary the user can 
 ## Audit mode
 
 Triggered when:
+
 - The user explicitly asks ("audit this repo", "check my repo posture", "what's missing", "is this repo hardened")
 - The user invokes the skill against a repo that already has most baseline files in place (LICENSE, SECURITY.md, CODEOWNERS, .gitignore, Dependabot config, branch protection on default branch). In that case, offer audit mode before applying anything: "This repo already has most of the baseline. Want me to run an audit instead?"
 
 **Audit is read-only.** No `PUT`/`PATCH`/`POST` calls. Only `GET` queries against the forge API plus local file-existence tests.
 
 **What it does:**
+
 1. Detect context (same as Step 1 — forge, owner, repo, default branch, visibility).
 2. Run every check in `references/github-audit.md` (GitHub) or `references/forgejo-branch-protection.md`'s verification section (Forgejo — currently less comprehensive).
 3. Print a grouped scoreboard: `[Files]`, `[Branch protection]`, `[Repo settings]`, `[Actions permissions]`, `[Vulnerability intake]`.
 4. Close with a summary line: `N pass / M fail / K skip`.
 
 **Status symbols:**
+
 - ✅ PASS
 - ❌ FAIL (shows `current → expected`)
 - ⚠️ SKIP (control doesn't apply to this repo — e.g., fork-PR approval on a private repo, secret scanning on private-without-GHAS, access-level on public repo)
 - ❓ UNKNOWN (couldn't read state — never treat as pass)
 
 **After the report:**
+
 - If any FAILs, ask the user: "Want me to apply fixes for the N failing items?" If yes, re-enter normal apply mode (Step 4) but scoped only to the failing controls.
 - If all PASS or SKIP, just confirm the repo is at baseline and stop.
 
@@ -322,13 +336,16 @@ Not a hard requirement — skip when the repo only runs trusted first-party code
 Chainguard `static` distroless runtime + Alpine Rust builder (Chainguard's `rust:latest-dev` lacks a musl rust-std target, so Alpine stays for the build stage — the runtime is what matters for CVE surface).
 
 To apply:
+
 1. Copy `templates/Dockerfile.chainguard` to the repo root as `Dockerfile`.
 2. Replace `<BINARY_NAME>` with the crate's binary name.
 3. Resolve `<RUNTIME_DIGEST>` from `cgr.dev/chainguard/static:latest`:
+
    ```bash
    docker pull cgr.dev/chainguard/static:latest
    docker inspect cgr.dev/chainguard/static:latest --format '{{index .RepoDigests 0}}'
    ```
+
 4. Ensure `.github/dependabot.yml` includes a `package-ecosystem: docker` entry so Dependabot keeps base-image digests current.
 5. If the binary needs glibc, swap the runtime image to `cgr.dev/chainguard/glibc-dynamic`; if it needs a shell at runtime, swap to `cgr.dev/chainguard/wolfi-base`. The distroless default has no shell, so any HEALTHCHECK must be delegated to the orchestrator (k8s probe, compose healthcheck).
 6. Remove or replace the "Optional asset build stage" comment block if the project bundles non-Rust assets (SPA, templates); wire the output directory with `COPY --from=<stage>`.
@@ -338,12 +355,15 @@ To apply:
 Grype vulnerability scan + Syft SBOM (CycloneDX + SPDX) + Sigstore SBOM attestation on release. Runs on PRs touching the Dockerfile, weekly cron (drift tracking), and on every published release.
 
 To apply:
+
 1. Copy `templates/workflows/image-scan.yml` → `.github/workflows/image-scan.yml`.
 2. Replace `<IMAGE_NAME>` with the image tag base (e.g., `myapp`). It's just a string used at `docker build -t <IMAGE_NAME>:scan .` time — no registry push.
 3. Create the drift label used by the weekly cron:
+
    ```bash
    gh label create image-scan-drift --color c5def5
    ```
+
 4. If the repo isn't Rust, remove `Cargo.lock` from the `paths:` trigger filter and add the lockfile(s) for your stack.
 
 On a `release` event the workflow also attests both SBOMs via `actions/attest-sbom` (Sigstore cosign), attaches them to the GitHub release, and provides release binary provenance when paired with a tag-triggered build workflow.
@@ -353,6 +373,7 @@ On a `release` event the workflow also attests both SBOMs via `actions/attest-sb
 Runs `pinact` on every PR that touches `.github/workflows/**` or `.github/actions/**` and fails if any `uses:` line is tag-pinned instead of SHA-pinned. Defense-in-depth against action-tag force-push attacks (e.g. the `aquasecurity/trivy-action` incident, March 2026).
 
 To apply:
+
 1. Copy `templates/workflows/pin-check.yml` → `.github/workflows/pin-check.yml`. No substitutions.
 2. Add `Pin Check / pinact` to the required status checks on `main` (see § 4c Branch protection).
 3. Before the first merge, run `pinact run` locally to SHA-pin any tag-pinned actions already in the repo, otherwise the check will fail on its own introduction PR.
@@ -363,7 +384,7 @@ If the repo has `dependency-review.yml` running on PRs and also has Dependabot +
 
 ## Resource layout
 
-```
+```text
 repo-bootstrap/
 ├── SKILL.md                              (this file)
 ├── templates/
