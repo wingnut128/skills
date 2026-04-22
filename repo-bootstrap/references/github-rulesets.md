@@ -23,6 +23,7 @@ Repository rulesets are GitHub's newer branch/tag/push governance system. They c
 | UI discoverability for casual users | ✅ (Settings → Branches) | ⚠️ (Settings → Rules, newer UI) |
 
 **Default for repo-bootstrap:** classic protection. Switch to rulesets when:
+
 - You have a solo-owner repo and want yourself to bypass the review-count rule without disabling `enforce_admins` globally
 - You govern multiple release branches from one rule (e.g. `main`, `release/*`, `hotfix/*`)
 - You need required signed commits on specific branches
@@ -30,7 +31,7 @@ Repository rulesets are GitHub's newer branch/tag/push governance system. They c
 
 ## Endpoint
 
-```
+```text
 POST /repos/{owner}/{repo}/rulesets
 GET  /repos/{owner}/{repo}/rulesets
 GET  /repos/{owner}/{repo}/rulesets/{ruleset_id}
@@ -138,6 +139,7 @@ Push rulesets don't have PR-specific rule types (`pull_request`, `required_statu
 **Don't remove classic protection when adding a ruleset** — the skill's default path (classic) is still in force. Removing classic to "simplify" before the ruleset is validated can silently drop required checks.
 
 **Safe migration shape (not implemented by this skill — see Stage E in TODO.md):**
+
 1. Add the ruleset in `enforcement: evaluate` mode. Watch for violations in `Settings → Rules → <ruleset> → Insights` for a few PR cycles.
 2. Flip to `enforcement: active`.
 3. Confirm the ruleset enforces every control the classic protection does.

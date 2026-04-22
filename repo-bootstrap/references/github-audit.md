@@ -72,6 +72,7 @@ REPO_INFO=$(gh api "repos/$OWNER/$REPO")
 | Secret scanning push protection | `.security_and_analysis.secret_scanning_push_protection.status` | `enabled` |
 
 **Secret scanning SKIP condition:** private repo without GHAS. Detect:
+
 ```bash
 [ "$VIS" != "public" ] && [ "$(jq -r '.security_and_analysis.advanced_security.status // "disabled"' <<< "$REPO_INFO")" != "enabled" ] && echo "SKIP: private repo without GHAS"
 ```
@@ -109,7 +110,7 @@ These two endpoints are shaped differently despite being "the same family" — t
 
 Print a scoreboard with fixed-width columns. Group by category. Close with a summary line: `N pass / M fail / K skip`.
 
-```
+```text
 === acme-org/widget-service — repo-bootstrap audit ===
 Visibility: public   Owner: User   Default branch: main
 

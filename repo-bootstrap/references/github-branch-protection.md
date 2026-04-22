@@ -32,6 +32,7 @@ Endpoint: `PUT /repos/{owner}/{repo}/branches/{branch}/protection`
 ```
 
 **Notes:**
+
 - `strict: false` means PRs don't have to be up-to-date with `main` before merging. Set to `true` only if you have few PRs at a time — otherwise stacked PRs become painful.
 - Context names come from the `name:` field of each workflow job (not the workflow's top-level `name:`). GitHub Actions jobs surface as `<job name>` or `<job name> (<matrix-value>)` when matrixed.
 - `require_code_owner_reviews: true` + `required_approving_review_count: 0` means code-owner review is required but a reviewer need not explicitly "approve" — PR authors can self-merge if they are the only code owner (useful for solo projects). Do **not** raise the count to 1 on solo repos: GitHub blocks self-approval, so a sole code owner ends up unable to merge their own PRs without admin override.
@@ -58,6 +59,7 @@ Endpoint: `PUT /repos/{owner}/{repo}/actions/permissions/fork-pr-contributor-app
 ```
 
 Values:
+
 - `all_external_contributors` — strictest. Any PR from someone without write access requires manual approval before workflows run.
 - `first_time_contributors_new_to_github` — loosest of the gated options. Only gates brand-new GitHub accounts.
 - `first_time_contributors` — middle option.
@@ -92,17 +94,20 @@ Controls which **other** repos can call reusable workflows or use composite acti
 **Scope:** only applies to **private** and **internal** repositories. Calling this endpoint on a public repo returns HTTP 422 with `"Access policy only applies to internal and private repositories."` — skip entirely for public repos. Public repo workflows are inherently callable from anywhere; there's no access-level concept.
 
 Detect first:
+
 ```bash
 VIS=$(gh repo view "$OWNER/$REPO" --json visibility -q .visibility)  # "public" | "private" | "internal"
 [ "$VIS" = "public" ] && echo "skip — public repo has no access policy"
 ```
 
 Values (for private/internal repos):
+
 - `none` — only this repo can use its own workflows. Tightest. Right default for private **user-owned** repos and private org repos that don't intentionally share workflows.
 - `organization` — any repo in the same org can consume. GitHub's platform default for private org-owned repos. Fine when internal sharing is expected.
 - `enterprise` — enterprise-wide sharing. Only on GHEC with an enterprise account.
 
 Pick:
+
 - Private user-owned → `none`
 - Private org-owned with no shared workflows → `none`
 - Private org-owned that hosts shared workflows → `organization` (the default; set explicitly only to pin it against drift)
@@ -149,10 +154,12 @@ gh api -X PATCH "repos/$OWNER/$REPO" \
 - **Push protection** rejects the push itself when a high-confidence secret pattern matches — prevents the leak entirely.
 
 **Availability:**
+
 - Public repos: **free**, always available.
 - Private repos: require **GitHub Advanced Security** (paid). On a private repo without GHAS, the API returns HTTP 422 with `"Secret scanning is not available for this repository"`. Catch and skip with a note, don't treat as fatal.
 
 Check before calling to avoid the 422:
+
 ```bash
 IS_PRIVATE=$(gh repo view "$OWNER/$REPO" --json isPrivate -q .isPrivate)
 HAS_GHAS=$(gh api "repos/$OWNER/$REPO" --jq '.security_and_analysis.advanced_security.status // "disabled"')
