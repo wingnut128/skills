@@ -1,0 +1,86 @@
+# ==============================================================================
+# Chainguard-based Rust Dockerfile template
+#
+# Before using:
+#   1. Replace <BINARY_NAME> with your binary name (typically matches crate name)
+#   2. Run these commands to get current Chainguard digests, then substitute
+#      <RUNTIME_DIGEST>:
+#
+#        docker pull cgr.dev/chainguard/static:latest
+#        docker inspect cgr.dev/chainguard/static:latest --format '{{index .RepoDigests 0}}'
+#
+#      (This template retains Alpine as the Rust builder because Chainguard
+#      rust:latest-dev does not currently ship a musl rust-std target.)
+#
+#   3. If your binary needs glibc, replace cgr.dev/chainguard/static with
+#      cgr.dev/chainguard/glibc-dynamic.
+#   4. If your binary needs a shell at runtime, use cgr.dev/chainguard/wolfi-base.
+#   5. Dependabot's `docker` ecosystem auto-updates digests.
+#   6. The distroless runtime has no shell — remove any HEALTHCHECK and rely on
+#      orchestrator probes (k8s httpGet, docker-compose depends_on).
+# ==============================================================================
+
+# syntax=docker/dockerfile:1
+#
+# Build args:
+#   FEATURES - Cargo feature flags (default: "default")
+#
+ARG FEATURES=default
+
+# ---- Optional asset build stage (remove if not needed) ----
+# If your project ships bundled assets (frontend SPA, templates, etc.), add a
+# builder stage here that produces the assets, then COPY --from=<stage> into
+# the Rust builder below. Keep the stage image pinned by digest and managed
+# by Dependabot's `docker` ecosystem.
+
+# ---------- Rust build ---------------------------------------------------
+# Alpine's official Rust image produces a fully statically-linked musl binary.
+# Chainguard's `rust:latest-dev` (Wolfi) does not ship a musl rust-std target,
+# so we keep Alpine for the build stage and rely on Chainguard only for the
+# runtime — the artifact copied into the final image is what matters for CVE
+# surface.
+FROM rust:1.95-alpine3.23@sha256:606fd313a0f49743ee2a7bd49a0914bab7deedb12791f3a846a34a4711db7ed2 AS builder
+
+ARG FEATURES
+
+# musl-dev: static linking. Add any other build-time C deps here.
+RUN apk add --no-cache musl-dev
+
+WORKDIR /app
+
+# Copy manifests first for better caching
+COPY Cargo.toml Cargo.lock ./
+
+# Create dummy src to build dependencies
+RUN mkdir src && \
+    echo "fn main() {}" > src/main.rs && \
+    cargo build --release --no-default-features --features "${FEATURES}" && \
+    rm -rf src
+
+# Copy actual source code
+COPY src ./src
+# COPY tests ./tests  # uncomment if integration tests are needed at build time
+
+# Build the release binary
+RUN touch src/main.rs && \
+    cargo build --release --no-default-features --features "${FEATURES}"
+
+# ---------- Runtime -------------------------------------------------------
+# cgr.dev/chainguard/static:latest — distroless, nonroot by default, CA bundle
+# bundled at /etc/ssl/certs/ca-certificates.crt, no shell, no package manager.
+FROM cgr.dev/chainguard/static@sha256:<RUNTIME_DIGEST>
+
+COPY --from=builder /app/target/release/<BINARY_NAME> /usr/local/bin/<BINARY_NAME>
+
+WORKDIR /app
+
+# Chainguard/static runs as uid 65532 (nonroot) by default.
+USER nonroot
+
+EXPOSE 8080
+
+# No HEALTHCHECK: the distroless runtime has no shell. Delegate to the
+# orchestrator (Kubernetes probe, docker-compose TCP/HTTP probe).
+
+ENTRYPOINT ["<BINARY_NAME>"]
+CMD ["--help"]

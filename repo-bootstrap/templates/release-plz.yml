@@ -1,0 +1,63 @@
+name: Release-plz
+
+on:
+  push:
+    branches: [{{DEFAULT_BRANCH}}]
+
+permissions:
+  contents: read
+
+jobs:
+  release-plz-release:
+    name: release-plz release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@{{HARDEN_RUNNER_SHA}} # {{HARDEN_RUNNER_VERSION}}
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@{{CHECKOUT_SHA}} # {{CHECKOUT_VERSION}}
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.RELEASE_PLZ_TOKEN }}
+
+      - uses: dtolnay/rust-toolchain@{{RUST_TOOLCHAIN_SHA}} # stable
+
+      - name: Run release-plz
+        uses: release-plz/action@{{RELEASE_PLZ_SHA}} # {{RELEASE_PLZ_VERSION}}
+        with:
+          command: release
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}
+
+  release-plz-pr:
+    name: release-plz PR
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    concurrency:
+      group: release-plz-${{ github.ref }}
+      cancel-in-progress: false
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@{{HARDEN_RUNNER_SHA}} # {{HARDEN_RUNNER_VERSION}}
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@{{CHECKOUT_SHA}} # {{CHECKOUT_VERSION}}
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.RELEASE_PLZ_TOKEN }}
+
+      - uses: dtolnay/rust-toolchain@{{RUST_TOOLCHAIN_SHA}} # stable
+
+      - name: Run release-plz
+        uses: release-plz/action@{{RELEASE_PLZ_SHA}} # {{RELEASE_PLZ_VERSION}}
+        with:
+          command: release-pr
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}

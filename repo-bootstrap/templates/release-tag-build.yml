@@ -1,0 +1,116 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to build (e.g. v0.2.2)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    env:
+      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+          - os: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-gnu
+          - os: macos-latest
+            target: aarch64-apple-darwin
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@{{HARDEN_RUNNER_SHA}} # {{HARDEN_RUNNER_VERSION}}
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@{{CHECKOUT_SHA}} # {{CHECKOUT_VERSION}}
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+
+      - uses: dtolnay/rust-toolchain@{{RUST_TOOLCHAIN_SHA}} # stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: actions/cache@{{CACHE_SHA}} # {{CACHE_VERSION}}
+        with:
+          path: |
+            ~/.cargo/registry/
+            ~/.cargo/git/
+            target/
+          key: release-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: release-${{ matrix.target }}-
+
+      - name: Validate tag format
+        run: |
+          if ! echo "$RELEASE_TAG" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "ERROR: tag '$RELEASE_TAG' is not vX.Y.Z"
+            exit 1
+          fi
+
+      - name: Validate Cargo.toml version matches tag
+        run: |
+          VERSION="${RELEASE_TAG#v}"
+          CARGO_VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
+          if [ "$CARGO_VERSION" != "$VERSION" ]; then
+            echo "ERROR: Cargo.toml version ($CARGO_VERSION) does not match tag ($VERSION)"
+            exit 1
+          fi
+
+      - name: Build release binary
+        env:
+          TARGET: ${{ matrix.target }}
+        run: cargo build --release --target "$TARGET"
+
+      - name: Package binary
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          VERSION="${RELEASE_TAG#v}"
+          mkdir -p dist
+          cp "target/${TARGET}/release/{{CRATE_NAME}}" "dist/{{CRATE_NAME}}-${VERSION}-${TARGET}"
+
+      - uses: actions/upload-artifact@{{UPLOAD_ARTIFACT_SHA}} # {{UPLOAD_ARTIFACT_VERSION}}
+        with:
+          name: {{CRATE_NAME}}-${{ matrix.target }}
+          path: dist/{{CRATE_NAME}}-*
+          if-no-files-found: error
+
+  publish:
+    name: Attach binaries to release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@{{HARDEN_RUNNER_SHA}} # {{HARDEN_RUNNER_VERSION}}
+        with:
+          egress-policy: audit
+
+      - uses: actions/download-artifact@{{DOWNLOAD_ARTIFACT_SHA}} # {{DOWNLOAD_ARTIFACT_VERSION}}
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Upload binaries and publish release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          gh release upload "$RELEASE_TAG" dist/{{CRATE_NAME}}-* --clobber
+          gh release edit "$RELEASE_TAG" --draft=false

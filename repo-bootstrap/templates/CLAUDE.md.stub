@@ -1,0 +1,11 @@
+# CLAUDE.md
+
+Project-specific instructions for Claude Code. Edit this file to describe:
+
+- **What this project is** — one paragraph of context so a fresh session can orient quickly.
+- **Runtime & tooling** — language versions, package manager, lint/format commands, test runner.
+- **Commands** — frequently-run commands (dev server, tests, lint, build).
+- **Architecture** — directory layout and the purpose of each top-level folder.
+- **Conventions** — coding patterns, type-safety rules, error handling, naming.
+
+Claude Code reads this file at the start of every session in this repo.

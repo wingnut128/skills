@@ -1,0 +1,9 @@
+# ── Cargo build output ──────────────────────────────────
+/target/
+**/*.rs.bk
+
+# ── Cargo package output ────────────────────────────────
+*.orig
+
+# ── rust-analyzer / IDE ─────────────────────────────────
+/rust-analyzer/

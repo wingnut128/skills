@@ -1,0 +1,20 @@
+# ── Compiled binaries ───────────────────────────────────
+/bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# ── Test artifacts ──────────────────────────────────────
+*.test
+*.out
+coverage.out
+coverage.html
+
+# ── Vendored deps ───────────────────────────────────────
+vendor/
+
+# ── Go workspace ────────────────────────────────────────
+go.work
+go.work.sum
