@@ -7,6 +7,7 @@ Skills are Markdown-driven capabilities that Claude Code loads on demand. Each s
 ## Installed skills
 
 - **[repo-bootstrap](./repo-bootstrap/)** — Apply a baseline of security controls and governance files to a new or under-protected GitHub repo. Supports apply mode, audit mode (read-only scoreboard), and dry-run mode. Covers license, security policy, CODEOWNERS, `.gitignore`, Dependabot, branch protection, secret scanning, Dependabot alerts, fork-PR approval gating, default workflow permissions, private advisory intake. Optional CI hardening templates for Chainguard Dockerfile, Grype image scanning with Sigstore SBOM attestation, `pinact` SHA-pin enforcement, and runner hardening via StepSecurity.
+- **[workflow-surgery](./workflow-surgery/)** — Edit GitHub Actions workflows and other YAML in place, or propagate a change across many repos. Covers the tool ladder (Edit → yq → perl → sed), multi-line regex gotchas, the Contents API no-clone fan-out route and its signing tradeoff, and the clone-and-sign fallback when personal commit signatures matter.
 
 ## Installing a skill
 
