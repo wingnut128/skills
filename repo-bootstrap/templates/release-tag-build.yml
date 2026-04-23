@@ -39,6 +39,13 @@ jobs:
         with:
           ref: ${{ env.RELEASE_TAG }}
 
+      - name: Free runner disk space
+        if: runner.os == 'Linux'
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL >/dev/null 2>&1
+          sudo docker image prune -af >/dev/null 2>&1
+          df -h / | tail -1
+
       - name: Install Rust stable
         run: |
           rustup update stable
