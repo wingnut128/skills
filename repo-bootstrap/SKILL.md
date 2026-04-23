@@ -142,13 +142,14 @@ Set up **release-plz** (Rust) or **release-please** (Node/Python/Go) to replace 
 
 If yes, apply:
 
+**Rust toolchain note.** The Rust templates use inline `rustup update stable && rustup default stable` instead of `dtolnay/rust-toolchain@stable`. The action's only ref is a rolling branch, which — once SHA-pinned for pin-check compliance — freezes the toolchain and can't be dependabot-updated. `rustup` on the GitHub-hosted runner is pre-installed and picks up the latest stable on every run, with no `uses:` line to pin.
+
 1. **Pin action SHAs first.** Look up current SHAs for:
    - `step-security/harden-runner` (latest v2.x)
    - `actions/checkout` (latest v6+)
    - `actions/cache` (latest v5+)
    - `actions/upload-artifact` (latest v7+)
    - `actions/download-artifact` (latest v8+)
-   - `dtolnay/rust-toolchain` (stable branch head)
    - `release-plz/action` (latest v0.5.x) — resolve annotated tag to commit SHA:
 
      ```bash
@@ -163,7 +164,7 @@ If yes, apply:
    | File | Template | Placeholders |
    |---|---|---|
    | `release-plz.toml` | `templates/release-plz.toml` | (none) |
-   | `.github/workflows/release-plz.yml` | `templates/release-plz.yml` | `{{DEFAULT_BRANCH}}`, `{{HARDEN_RUNNER_SHA/VERSION}}`, `{{CHECKOUT_SHA/VERSION}}`, `{{RUST_TOOLCHAIN_SHA}}`, `{{RELEASE_PLZ_SHA/VERSION}}` |
+   | `.github/workflows/release-plz.yml` | `templates/release-plz.yml` | `{{DEFAULT_BRANCH}}`, `{{HARDEN_RUNNER_SHA/VERSION}}`, `{{CHECKOUT_SHA/VERSION}}`, `{{RELEASE_PLZ_SHA/VERSION}}` |
    | `.github/workflows/release.yml` | `templates/release-tag-build.yml` | Above plus `{{CRATE_NAME}}`, `{{CACHE_SHA/VERSION}}`, `{{UPLOAD_ARTIFACT_SHA/VERSION}}`, `{{DOWNLOAD_ARTIFACT_SHA/VERSION}}` |
 
 3. **If a `release.yml` already exists**, don't overwrite — show the user what the new tag-triggered flow looks like and ask whether to replace. The existing one probably uses Cargo.toml-diff detection, which conflicts with release-plz.

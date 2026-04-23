@@ -24,7 +24,10 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.RELEASE_PLZ_TOKEN }}
 
-      - uses: dtolnay/rust-toolchain@{{RUST_TOOLCHAIN_SHA}} # stable
+      - name: Install Rust stable
+        run: |
+          rustup update stable
+          rustup default stable
 
       - name: Run release-plz
         uses: release-plz/action@{{RELEASE_PLZ_SHA}} # {{RELEASE_PLZ_VERSION}}
@@ -53,7 +56,10 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.RELEASE_PLZ_TOKEN }}
 
-      - uses: dtolnay/rust-toolchain@{{RUST_TOOLCHAIN_SHA}} # stable
+      - name: Install Rust stable
+        run: |
+          rustup update stable
+          rustup default stable
 
       - name: Run release-plz
         uses: release-plz/action@{{RELEASE_PLZ_SHA}} # {{RELEASE_PLZ_VERSION}}
