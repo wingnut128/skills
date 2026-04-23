@@ -1,7 +1,7 @@
 ---
 name: repo-bootstrap
 description: >-
-  Use when starting a new GitHub or Forgejo repo, hardening an existing one
+  Use when starting a new GitHub repo, hardening an existing one
   that lacks baseline security controls, or auditing a repo's current posture.
   Invoke for requests like "set up a new repo", "add branch protection",
   "bootstrap this repo", "harden this repo", "add security policy",
@@ -18,7 +18,7 @@ description: >-
 
 # repo-bootstrap
 
-Apply a consistent baseline of security controls and governance files to a fresh or under-protected repo. Works on both GitHub and Forgejo (Gitea-compatible API). Idempotent — safe to re-run.
+Apply a consistent baseline of security controls and governance files to a fresh or under-protected GitHub repo. Idempotent — safe to re-run.
 
 ## When this skill fires
 
@@ -29,7 +29,7 @@ Trigger on requests like:
 - "Add branch protection"
 - "Harden this repo"
 - "Add a license / security policy / CODEOWNERS"
-- "Configure dependabot / renovate"
+- "Configure dependabot"
 - "Require status checks before merge"
 - "Audit this repo" / "check my repo posture" / "is this repo hardened" → runs **audit mode** (read-only scoreboard; see § Audit mode)
 
@@ -41,18 +41,17 @@ Do not fire for narrow asks that clearly fit a single existing tool, like "add o
 - **Confirm before applying branch protection.** It's not hard to revert, but it's visible to the user and affects future workflow, so surface the full plan first.
 - **Never overwrite a non-empty file without explicit permission.** If `LICENSE` already exists with content, leave it; note that it's already there.
 - **Prefer fewer, tighter questions.** The user probably knows what they want. Ask once per decision, don't belabor.
-- **Explain what's being skipped on Forgejo.** A few controls (GitHub private security advisories, `fork-pr-contributor-approval`) don't have exact Forgejo equivalents. Tell the user what's being skipped so they can apply an alternative.
 
 ## Overall flow
 
-1. **Detect context** (no user input needed): forge type, repo owner/name, branches, existing files, existing workflows, current protection.
+1. **Detect context** (no user input needed): repo owner/name, branches, existing files, existing workflows, current protection.
 2. **Present the plan** to the user: what will be created, what will be configured, what's already in place and will be skipped.
 3. **Prompt for choices** not inferrable from the repo: license type, security contact style, primary stack (for `.gitignore` + dependency updates), required review count.
 4. **Apply** in this order:
    1. Write baseline files (LICENSE, SECURITY.md, CODEOWNERS, .gitignore, dependency-update config, CLAUDE.md stub if absent)
    2. Evaluate release automation — if the repo merits one (see step 4b skip criteria), add release-plz/release-please workflows + config
    3. Commit those to a feature branch and open a PR (or commit directly to main if user prefers — ask)
-   4. After that PR is merged, or in parallel on another PR, apply branch protection and account-level toggles via the forge API
+   4. After that PR is merged, or in parallel on another PR, apply branch protection and account-level toggles via the GitHub API
 5. **Verify** by reading back the current state and reporting anything that didn't stick.
 
 ## Step 1 — Detect context
@@ -60,24 +59,18 @@ Do not fire for narrow asks that clearly fit a single existing tool, like "add o
 Run in parallel:
 
 ```bash
-# Forge + repo identity
+# Repo identity
 git remote get-url origin
 git rev-parse --abbrev-ref HEAD
 
 # Existing workflow files (for required-check context discovery)
 ls .github/workflows/ 2>/dev/null
-ls .forgejo/workflows/ 2>/dev/null
 
 # What baseline files are already present
-ls -la LICENSE* SECURITY.md CODEOWNERS .github/CODEOWNERS .gitignore .github/dependabot.yml renovate.json CLAUDE.md 2>/dev/null
+ls -la LICENSE* SECURITY.md CODEOWNERS .github/CODEOWNERS .gitignore .github/dependabot.yml CLAUDE.md 2>/dev/null
 ```
 
-Parse the remote URL:
-
-- Host `github.com` → forge = `github`, use `gh` CLI for API calls
-- Any other host → forge = `forgejo` (or Gitea — same API), use `curl` against `<host>/api/v1/` with a `FORGEJO_TOKEN` env var
-
-If the remote isn't `origin`, ask the user for the canonical remote name.
+Confirm the remote host is `github.com`; this skill targets GitHub only. If the remote isn't `origin`, ask the user for the canonical remote name.
 
 ## Step 2 — Present the plan
 
@@ -97,9 +90,7 @@ Wait for confirmation before applying anything API-side. File writes can go into
 Ask only for what can't be inferred. Defaults in parens:
 
 - **License** (MIT): MIT / Apache-2.0 / BSD-3-Clause / proprietary
-- **Security reporting path**:
-  - On GitHub: private advisory (default) or email
-  - On Forgejo: email (default — Forgejo doesn't have GitHub-style advisories)
+- **Security reporting path**: private advisory (default) or email
 - **Primary stack** (infer from files — `package.json` → bun/node, `Cargo.toml` → rust, `pyproject.toml`/`requirements.txt` → python, `go.mod` → go; ask only if ambiguous)
 - **Required approval count** (0): 0 for solo repos, 1+ for teams
 
@@ -114,19 +105,18 @@ Pull each file from `templates/` in this skill, substituting placeholders:
 - `{{YEAR}}` → current year
 - `{{OWNER}}` → copyright holder (from git config user.name)
 - `{{REPO}}` → repo name
-- `{{FORGE_URL}}` → base URL of the forge
 - `{{SECURITY_REPORT_URL}}` → the advisory link or `mailto:...`
-- `{{CLAUDE_USERNAME}}` → the user's forge username, for CODEOWNERS
+- `{{CLAUDE_USERNAME}}` → the user's GitHub username, for CODEOWNERS
 
 Files to write (only if absent):
 
 | File | Template | Notes |
 |---|---|---|
 | `LICENSE` | `templates/LICENSE-<choice>.txt` | |
-| `SECURITY.md` | `templates/SECURITY-github.md` or `SECURITY-forgejo.md` | |
-| `.github/CODEOWNERS` (GH) or `.gitea/CODEOWNERS` (Forgejo) | `templates/CODEOWNERS` | |
+| `SECURITY.md` | `templates/SECURITY.md` | |
+| `.github/CODEOWNERS` | `templates/CODEOWNERS` | |
 | `.gitignore` | Combine `templates/gitignore-security-base` + `templates/gitignore-<stack>` | **Always append the security base**, even if `.gitignore` already exists — merge intelligently, don't duplicate entries the user already has |
-| `.github/dependabot.yml` (GH) or `renovate.json` (Forgejo) | `templates/dependabot-<stack>.yml` / `templates/renovate-<stack>.json` | |
+| `.github/dependabot.yml` | `templates/dependabot-<stack>.yml` | |
 | `CLAUDE.md` | `templates/CLAUDE.md.stub` | Only if absent; this is a stub, not a full template |
 
 For `.gitignore` specifically: read the existing file if any, parse it into a set of lines, union with the template lines, preserve the existing section comments, and write the union back. The goal is that re-running the skill on a repo that already has the security block doesn't create duplicate lines.
@@ -201,13 +191,10 @@ For the details of the API calls, see:
 - `references/github-branch-protection.md`
 - `references/github-audit.md` (read-only audit control list — used by § Audit mode)
 - `references/github-rulesets.md` (upgrade path — see below)
-- `references/forgejo-branch-protection.md`
 
 **Rulesets vs classic protection.** The default path above uses **classic branch protection** (`PUT /branches/{branch}/protection`). If the user asks about bypass allowances (e.g. "let me bypass the review count but nobody else"), targeting multiple branches with one rule (`main`, `release/*`), required signed commits on a branch, push-time rulesets ("block direct pushes to main"), or commit-message patterns — see `references/github-rulesets.md`. Rulesets and classic protection coexist (their rules are unioned), so adding a ruleset doesn't require removing classic. Full classic→rulesets migration is out of scope for this skill; see Stage E in `TODO.md`.
 
 High-level:
-
-**GitHub:**
 
 1. Discover which workflow jobs produce status check contexts (parse `.github/workflows/*.yml`; each job's `name:` field maps to a context). If no workflows exist yet, pass `required_status_checks: null` — don't send an empty contexts array.
 2. `PUT /repos/{owner}/{repo}/branches/main/protection` with:
@@ -224,34 +211,9 @@ High-level:
 9. `PUT /repos/{owner}/{repo}/private-vulnerability-reporting` (enables private advisory intake — pairs with `SECURITY.md`)
 10. `PATCH /repos/{owner}/{repo}` with `allow_auto_merge: true` and `delete_branch_on_merge: true`
 
-**Forgejo:**
-
-1. Discover which workflow jobs produce required checks (parse `.forgejo/workflows/*.yml` OR `.github/workflows/*.yml` if Forgejo Actions is configured to read from there).
-2. `POST /api/v1/repos/{owner}/{repo}/branch_protections` (or PATCH if one already exists) with:
-   - `rule_name: main`
-   - `enable_push: false`
-   - `enable_merge_whitelist: false` (unless user wants to restrict)
-   - `required_approvals: N`
-   - `block_on_rejected_reviews: true`
-   - `block_on_outdated_branch: false`
-   - `enable_status_check: true`
-   - `status_check_contexts: [...]`
-   - `enable_approvals_whitelist: false`
-   - `require_signed_commits: false` (unless user asks)
-
-   See `references/forgejo-branch-protection.md` for the full payload.
-
-Things to skip on Forgejo and tell the user:
-
-- No `fork-pr-contributor-approval` equivalent — Forgejo Actions secrets don't have a gating policy in the same shape.
-- No private security advisories — `SECURITY-forgejo.md` points to an email or the repo's issue tracker.
-- Dependabot alerts don't exist on Forgejo. Renovate running as a scheduled workflow is the nearest equivalent; the skill writes `renovate.json` but **does not** install a runner — the user has to wire up Renovate themselves or install the Forgejo bot.
-
 ## Step 5 — Verify
 
 After the API calls, read back the state:
-
-**GitHub:**
 
 ```bash
 gh api repos/{owner}/{repo}/branches/main/protection | jq '{required_status_checks, required_pull_request_reviews, enforce_admins, required_conversation_resolution, allow_force_pushes, allow_deletions}'
@@ -261,12 +223,6 @@ gh api repos/{owner}/{repo}/actions/permissions/workflow
 [ "$(gh repo view {owner}/{repo} --json visibility -q .visibility)" != "public" ] && gh api repos/{owner}/{repo}/actions/permissions/access
 gh api repos/{owner}/{repo} | jq '{allow_auto_merge, delete_branch_on_merge, secret_scanning: .security_and_analysis.secret_scanning.status, secret_scanning_push_protection: .security_and_analysis.secret_scanning_push_protection.status}'
 gh api repos/{owner}/{repo}/private-vulnerability-reporting
-```
-
-**Forgejo:**
-
-```bash
-curl -H "Authorization: token $FORGEJO_TOKEN" "$FORGE_URL/api/v1/repos/$OWNER/$REPO/branch_protections"
 ```
 
 Report what's now in place vs what was skipped, in a short summary the user can eyeball.
@@ -282,8 +238,8 @@ Triggered when:
 
 **What it does:**
 
-1. Detect context (same as Step 1 — forge, owner, repo, default branch, visibility).
-2. Run every check in `references/github-audit.md` (GitHub) or `references/forgejo-branch-protection.md`'s verification section (Forgejo — currently less comprehensive).
+1. Detect context (same as Step 1 — owner, repo, default branch, visibility).
+2. Run every check in `references/github-audit.md`.
 3. Print a grouped scoreboard: `[Files]`, `[Branch protection]`, `[Repo settings]`, `[Actions permissions]`, `[Vulnerability intake]`.
 4. Close with a summary line: `N pass / M fail / K skip`.
 
@@ -303,7 +259,7 @@ See `references/github-audit.md` for the full control list, `jq` filters, and ou
 
 ## Dry-run mode
 
-If the user says "plan" or "dry run" or passes `--plan`, do everything in steps 1–3 plus generate the file contents and API payloads, but **don't write anything and don't call the forge API**. Print the intended diff and payloads instead, then wait for the user to confirm before actually applying.
+If the user says "plan" or "dry run" or passes `--plan`, do everything in steps 1–3 plus generate the file contents and API payloads, but **don't write anything and don't call the GitHub API**. Print the intended diff and payloads instead, then wait for the user to confirm before actually applying.
 
 ## Important edge cases
 
@@ -311,7 +267,6 @@ If the user says "plan" or "dry run" or passes `--plan`, do everything in steps 
 - **Fresh repo with no commits**: some API calls fail without a commit on the default branch. If detected, make the first commit (the baseline files) and push before calling branch-protection APIs.
 - **User already has CODEOWNERS**: don't overwrite. Offer to add their username if missing.
 - **User has a root `.github/` directory but CODEOWNERS is in repo root**: both locations work on GitHub. Prefer `.github/CODEOWNERS` if neither exists; otherwise leave the existing one alone.
-- **Token missing on Forgejo**: prompt the user for a `FORGEJO_TOKEN` with repo admin scope. Don't try to proceed without it.
 
 ## CI hardening
 
@@ -406,8 +361,7 @@ repo-bootstrap/
 │   ├── LICENSE-MIT.txt
 │   ├── LICENSE-Apache-2.0.txt
 │   ├── LICENSE-BSD-3-Clause.txt
-│   ├── SECURITY-github.md
-│   ├── SECURITY-forgejo.md
+│   ├── SECURITY.md
 │   ├── CODEOWNERS
 │   ├── CLAUDE.md.stub
 │   ├── gitignore-security-base
@@ -421,11 +375,6 @@ repo-bootstrap/
 │   ├── dependabot-rust.yml
 │   ├── dependabot-python.yml
 │   ├── dependabot-go.yml
-│   ├── renovate-bun.json
-│   ├── renovate-node.json
-│   ├── renovate-rust.json
-│   ├── renovate-python.json
-│   ├── renovate-go.json
 │   ├── release-plz.toml                 (Rust release-plz config)
 │   ├── release-plz.yml                  (Rust release-plz workflow)
 │   ├── release-tag-build.yml            (tag-triggered binary build + release upload)
@@ -437,7 +386,6 @@ repo-bootstrap/
     ├── github-branch-protection.md       (payloads + examples)
     ├── github-audit.md                   (read-only control checks + jq filters)
     ├── github-rulesets.md                (upgrade path from classic protection)
-    ├── forgejo-branch-protection.md      (payloads + examples)
     └── stack-matrix.md                   (which files go with which stack)
 ```
 

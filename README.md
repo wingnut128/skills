@@ -6,7 +6,7 @@ Skills are Markdown-driven capabilities that Claude Code loads on demand. Each s
 
 ## Installed skills
 
-- **[repo-bootstrap](./repo-bootstrap/)** — Apply a baseline of security controls and governance files to a new or under-protected GitHub or Forgejo repo. Supports apply mode, audit mode (read-only scoreboard), and dry-run mode. Covers license, security policy, CODEOWNERS, `.gitignore`, Dependabot/Renovate, branch protection, secret scanning, Dependabot alerts, fork-PR approval gating, default workflow permissions, private advisory intake. Optional CI hardening templates for Chainguard Dockerfile, Grype image scanning with Sigstore SBOM attestation, `pinact` SHA-pin enforcement, and runner hardening via StepSecurity.
+- **[repo-bootstrap](./repo-bootstrap/)** — Apply a baseline of security controls and governance files to a new or under-protected GitHub repo. Supports apply mode, audit mode (read-only scoreboard), and dry-run mode. Covers license, security policy, CODEOWNERS, `.gitignore`, Dependabot, branch protection, secret scanning, Dependabot alerts, fork-PR approval gating, default workflow permissions, private advisory intake. Optional CI hardening templates for Chainguard Dockerfile, Grype image scanning with Sigstore SBOM attestation, `pinact` SHA-pin enforcement, and runner hardening via StepSecurity.
 
 ## Installing a skill
 
