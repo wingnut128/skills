@@ -1,6 +1,19 @@
 ---
 name: repo-bootstrap
-description: Use when starting a new GitHub or Forgejo repo, hardening an existing one that lacks baseline security controls, or auditing a repo's current posture. Invoke for requests like "set up a new repo", "add branch protection", "bootstrap this repo", "harden this repo", "add security policy", "add license", "set up code owners", "configure dependabot", "audit this repo", "check my repo posture", or any ask that touches repo-level security and governance. Applies the full baseline — license, security policy, CODEOWNERS, security-hardened .gitignore, dependency update config, branch protection with required status checks, fork-PR workflow approval gating, secret scanning, private vulnerability reporting, and Dependabot/security alerts. Supports a read-only audit sub-mode that scores an existing repo against the baseline. Idempotent: detects what's already present and only adds what's missing, so it is safe to re-run.
+description: >-
+  Use when starting a new GitHub or Forgejo repo, hardening an existing one
+  that lacks baseline security controls, or auditing a repo's current posture.
+  Invoke for requests like "set up a new repo", "add branch protection",
+  "bootstrap this repo", "harden this repo", "add security policy",
+  "add license", "set up code owners", "configure dependabot",
+  "audit this repo", "check my repo posture", or any ask that touches
+  repo-level security and governance. Applies the full baseline — license,
+  security policy, CODEOWNERS, security-hardened .gitignore, dependency
+  update config, branch protection with required status checks, fork-PR
+  workflow approval gating, secret scanning, private vulnerability reporting,
+  and Dependabot/security alerts. Supports a read-only audit sub-mode that
+  scores an existing repo against the baseline. Idempotent — detects what's
+  already present and only adds what's missing, so it is safe to re-run.
 ---
 
 # repo-bootstrap
