@@ -4,23 +4,23 @@ Repository rulesets are GitHub's newer branch/tag/push governance system. They c
 
 ## When to prefer rulesets over classic
 
-| Need | Classic | Rulesets |
-|---|---|---|
-| Require N approving reviews on a branch | ✅ | ✅ |
-| Required status checks | ✅ | ✅ |
-| Enforce admins | ✅ (boolean) | ✅ (via `bypass_actors`, per-actor) |
-| Dismiss stale reviews | ✅ | ✅ |
-| Require code-owner review | ✅ | ✅ |
-| Conversation resolution required | ✅ | ✅ |
-| Forbid force-push / deletion | ✅ | ✅ |
-| **Per-actor bypass allowances** (e.g. only owner bypasses review count) | ❌ | ✅ |
-| **Target multiple branches with one rule** (`main`, `release/*`) | ❌ (one protection per branch) | ✅ (fnmatch include/exclude) |
-| **Required signed commits** | ❌ (repo-wide only) | ✅ (per-branch) |
-| **Push rulesets** (rules that apply to direct pushes, not just PR merges) | ❌ | ✅ |
-| **Required deployment environments before merge** | ❌ | ✅ |
-| **Block commit messages matching a regex** | ❌ | ✅ |
-| Simple API, fewer endpoints | ✅ | ❌ (one `/rulesets` endpoint but denser payload) |
-| UI discoverability for casual users | ✅ (Settings → Branches) | ⚠️ (Settings → Rules, newer UI) |
+| Need                                                                      | Classic                        | Rulesets                                         |
+| ------------------------------------------------------------------------- | ------------------------------ | ------------------------------------------------ |
+| Require N approving reviews on a branch                                   | ✅                             | ✅                                               |
+| Required status checks                                                    | ✅                             | ✅                                               |
+| Enforce admins                                                            | ✅ (boolean)                   | ✅ (via `bypass_actors`, per-actor)              |
+| Dismiss stale reviews                                                     | ✅                             | ✅                                               |
+| Require code-owner review                                                 | ✅                             | ✅                                               |
+| Conversation resolution required                                          | ✅                             | ✅                                               |
+| Forbid force-push / deletion                                              | ✅                             | ✅                                               |
+| **Per-actor bypass allowances** (e.g. only owner bypasses review count)   | ❌                             | ✅                                               |
+| **Target multiple branches with one rule** (`main`, `release/*`)          | ❌ (one protection per branch) | ✅ (fnmatch include/exclude)                     |
+| **Required signed commits**                                               | ❌ (repo-wide only)            | ✅ (per-branch)                                  |
+| **Push rulesets** (rules that apply to direct pushes, not just PR merges) | ❌                             | ✅                                               |
+| **Required deployment environments before merge**                         | ❌                             | ✅                                               |
+| **Block commit messages matching a regex**                                | ❌                             | ✅                                               |
+| Simple API, fewer endpoints                                               | ✅                             | ❌ (one `/rulesets` endpoint but denser payload) |
+| UI discoverability for casual users                                       | ✅ (Settings → Branches)       | ⚠️ (Settings → Rules, newer UI)                  |
 
 **Default for repo-bootstrap:** classic protection. Switch to rulesets when:
 
@@ -106,22 +106,22 @@ This ruleset matches what the classic `repo-bootstrap` applies, plus one feature
 
 ## Rule types
 
-| Type | Parameters | Purpose |
-|---|---|---|
-| `creation` | — | Block branch creation matching the rule. |
-| `update` | — | Block pushes that update existing commits. |
-| `deletion` | — | Block branch deletion. |
-| `required_linear_history` | — | Require fast-forward or rebase; block merge commits. |
-| `non_fast_forward` | — | Block force-push. |
-| `required_deployments` | `required_deployment_environments: [string]` | Require successful deployment to listed environments before merge. |
-| `required_signatures` | — | Require signed commits on this branch. |
-| `pull_request` | `required_approving_review_count`, `dismiss_stale_reviews_on_push`, `require_code_owner_review`, `require_last_push_approval`, `required_review_thread_resolution` | PR gate. |
-| `required_status_checks` | `required_status_checks: [{context, integration_id?}]`, `strict_required_status_checks_policy` | CI gate. |
-| `commit_message_pattern` | `name`, `pattern`, `operator: starts_with \| ends_with \| contains \| regex`, `negate` | Enforce/forbid commit message shapes. |
-| `commit_author_email_pattern` | same as above | Restrict author email. |
-| `committer_email_pattern` | same as above | Restrict committer email. |
-| `branch_name_pattern` | same as above | Enforce branch naming. |
-| `tag_name_pattern` | same as above | Enforce tag naming. |
+| Type                          | Parameters                                                                                                                                                         | Purpose                                                            |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------ |
+| `creation`                    | —                                                                                                                                                                  | Block branch creation matching the rule.                           |
+| `update`                      | —                                                                                                                                                                  | Block pushes that update existing commits.                         |
+| `deletion`                    | —                                                                                                                                                                  | Block branch deletion.                                             |
+| `required_linear_history`     | —                                                                                                                                                                  | Require fast-forward or rebase; block merge commits.               |
+| `non_fast_forward`            | —                                                                                                                                                                  | Block force-push.                                                  |
+| `required_deployments`        | `required_deployment_environments: [string]`                                                                                                                       | Require successful deployment to listed environments before merge. |
+| `required_signatures`         | —                                                                                                                                                                  | Require signed commits on this branch.                             |
+| `pull_request`                | `required_approving_review_count`, `dismiss_stale_reviews_on_push`, `require_code_owner_review`, `require_last_push_approval`, `required_review_thread_resolution` | PR gate.                                                           |
+| `required_status_checks`      | `required_status_checks: [{context, integration_id?}]`, `strict_required_status_checks_policy`                                                                     | CI gate.                                                           |
+| `commit_message_pattern`      | `name`, `pattern`, `operator: starts_with \| ends_with \| contains \| regex`, `negate`                                                                             | Enforce/forbid commit message shapes.                              |
+| `commit_author_email_pattern` | same as above                                                                                                                                                      | Restrict author email.                                             |
+| `committer_email_pattern`     | same as above                                                                                                                                                      | Restrict committer email.                                          |
+| `branch_name_pattern`         | same as above                                                                                                                                                      | Enforce branch naming.                                             |
+| `tag_name_pattern`            | same as above                                                                                                                                                      | Enforce tag naming.                                                |
 
 ## Push rulesets
 

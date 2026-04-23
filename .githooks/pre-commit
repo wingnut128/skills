@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Auto-format staged markdown with prettier, then re-stage.
+# Enable: git config core.hooksPath .githooks
+set -euo pipefail
+
+staged_md=$(git diff --cached --name-only --diff-filter=ACM -- '*.md' | tr '\n' ' ')
+[ -z "$staged_md" ] && exit 0
+
+if ! command -v npx >/dev/null 2>&1; then
+  echo "pre-commit: npx not found — skipping prettier (install Node.js to enable)" >&2
+  exit 0
+fi
+
+# shellcheck disable=SC2086
+npx --yes prettier@3.3.3 --write $staged_md
+
+# Re-stage any files prettier modified
+# shellcheck disable=SC2086
+git add $staged_md

@@ -89,7 +89,7 @@ Endpoint: `PUT /repos/{owner}/{repo}/actions/permissions/access`
 { "access_level": "none" }
 ```
 
-Controls which **other** repos can call reusable workflows or use composite actions defined in *this* repo.
+Controls which **other** repos can call reusable workflows or use composite actions defined in _this_ repo.
 
 **Scope:** only applies to **private** and **internal** repositories. Calling this endpoint on a public repo returns HTTP 422 with `"Access policy only applies to internal and private repositories."` — skip entirely for public repos. Public repo workflows are inherently callable from anywhere; there's no access-level concept.
 

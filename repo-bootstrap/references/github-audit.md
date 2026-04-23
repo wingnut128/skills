@@ -27,14 +27,14 @@ OWNER_TYPE=$(gh api "users/$OWNER" --jq '.type // "Organization"' 2>/dev/null ||
 
 Each check is a file existence test. Run from the repo root.
 
-| Control | Check |
-|---|---|
-| LICENSE exists | `test -f LICENSE \|\| test -f LICENSE.md \|\| test -f LICENSE.txt` |
-| SECURITY.md exists | `test -f SECURITY.md \|\| test -f .github/SECURITY.md` |
-| CODEOWNERS exists | `test -f CODEOWNERS \|\| test -f .github/CODEOWNERS \|\| test -f docs/CODEOWNERS` |
-| CLAUDE.md exists | `test -f CLAUDE.md` |
-| .gitignore exists | `test -f .gitignore` |
-| Dependabot config | `test -f .github/dependabot.yml \|\| test -f .github/dependabot.yaml` |
+| Control            | Check                                                                             |
+| ------------------ | --------------------------------------------------------------------------------- |
+| LICENSE exists     | `test -f LICENSE \|\| test -f LICENSE.md \|\| test -f LICENSE.txt`                |
+| SECURITY.md exists | `test -f SECURITY.md \|\| test -f .github/SECURITY.md`                            |
+| CODEOWNERS exists  | `test -f CODEOWNERS \|\| test -f .github/CODEOWNERS \|\| test -f docs/CODEOWNERS` |
+| CLAUDE.md exists   | `test -f CLAUDE.md`                                                               |
+| .gitignore exists  | `test -f .gitignore`                                                              |
+| Dependabot config  | `test -f .github/dependabot.yml \|\| test -f .github/dependabot.yaml`             |
 
 Dependabot is only a PASS if the config covers every package ecosystem detected in the repo (Cargo → `package-ecosystem: "cargo"`, npm/bun → `"npm"`, etc.). Simple presence is a partial pass — note gaps.
 
@@ -46,15 +46,15 @@ Fetch once, query many:
 BP=$(gh api "repos/$OWNER/$REPO/branches/$BRANCH/protection")
 ```
 
-| Control | jq filter | Expected |
-|---|---|---|
-| Required status checks present | `.required_status_checks.contexts \| length` | `> 0` |
-| Dismiss stale reviews | `.required_pull_request_reviews.dismiss_stale_reviews` | `true` |
-| Require code-owner review | `.required_pull_request_reviews.require_code_owner_reviews` | `true` |
-| Enforce admins | `.enforce_admins.enabled` | `true` |
-| Conversation resolution required | `.required_conversation_resolution.enabled` | `true` |
-| Force pushes blocked | `.allow_force_pushes.enabled` | `false` |
-| Branch deletion blocked | `.allow_deletions.enabled` | `false` |
+| Control                          | jq filter                                                   | Expected |
+| -------------------------------- | ----------------------------------------------------------- | -------- |
+| Required status checks present   | `.required_status_checks.contexts \| length`                | `> 0`    |
+| Dismiss stale reviews            | `.required_pull_request_reviews.dismiss_stale_reviews`      | `true`   |
+| Require code-owner review        | `.required_pull_request_reviews.require_code_owner_reviews` | `true`   |
+| Enforce admins                   | `.enforce_admins.enabled`                                   | `true`   |
+| Conversation resolution required | `.required_conversation_resolution.enabled`                 | `true`   |
+| Force pushes blocked             | `.allow_force_pushes.enabled`                               | `false`  |
+| Branch deletion blocked          | `.allow_deletions.enabled`                                  | `false`  |
 
 If `$BP` fetch returns 404, the branch has **no protection at all** — report that as a single top-level FAIL and skip the per-field checks.
 
@@ -64,11 +64,11 @@ If `$BP` fetch returns 404, the branch has **no protection at all** — report t
 REPO_INFO=$(gh api "repos/$OWNER/$REPO")
 ```
 
-| Control | jq filter | Expected |
-|---|---|---|
-| Auto-merge enabled | `.allow_auto_merge` | `true` |
-| Delete branch on merge | `.delete_branch_on_merge` | `true` |
-| Secret scanning | `.security_and_analysis.secret_scanning.status` | `enabled` |
+| Control                         | jq filter                                                       | Expected  |
+| ------------------------------- | --------------------------------------------------------------- | --------- |
+| Auto-merge enabled              | `.allow_auto_merge`                                             | `true`    |
+| Delete branch on merge          | `.delete_branch_on_merge`                                       | `true`    |
+| Secret scanning                 | `.security_and_analysis.secret_scanning.status`                 | `enabled` |
 | Secret scanning push protection | `.security_and_analysis.secret_scanning_push_protection.status` | `enabled` |
 
 **Secret scanning SKIP condition:** private repo without GHAS. Detect:
@@ -79,12 +79,12 @@ REPO_INFO=$(gh api "repos/$OWNER/$REPO")
 
 ## Actions permission controls
 
-| Control | API | Expected |
-|---|---|---|
-| Default workflow token permissions | `actions/permissions/workflow` → `.default_workflow_permissions` | `read` |
-| GITHUB_TOKEN can approve PRs | `actions/permissions/workflow` → `.can_approve_pull_request_reviews` | `false` |
-| Fork-PR contributor approval | `actions/permissions/fork-pr-contributor-approval` → `.approval_policy` | `all_external_contributors` |
-| Reusable-workflow access level | `actions/permissions/access` → `.access_level` | `none` (private user-owned, private org-owned without shared workflows) |
+| Control                            | API                                                                     | Expected                                                                |
+| ---------------------------------- | ----------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Default workflow token permissions | `actions/permissions/workflow` → `.default_workflow_permissions`        | `read`                                                                  |
+| GITHUB_TOKEN can approve PRs       | `actions/permissions/workflow` → `.can_approve_pull_request_reviews`    | `false`                                                                 |
+| Fork-PR contributor approval       | `actions/permissions/fork-pr-contributor-approval` → `.approval_policy` | `all_external_contributors`                                             |
+| Reusable-workflow access level     | `actions/permissions/access` → `.access_level`                          | `none` (private user-owned, private org-owned without shared workflows) |
 
 **Fork-PR approval SKIP condition:** private repo. The API rejects with `"Fork PR approval is not allowed for private repositories"`. Check `$VIS`.
 
@@ -94,11 +94,11 @@ REPO_INFO=$(gh api "repos/$OWNER/$REPO")
 
 ## Vulnerability intake controls
 
-| Control | API | Expected |
-|---|---|---|
-| Dependabot alerts | `repos/{owner}/{repo}/vulnerability-alerts` | HTTP 204 (enabled) |
-| Dependabot security updates | `repos/{owner}/{repo}/automated-security-fixes` → `.enabled` | `true` (HTTP 200 with JSON body `{enabled, paused}`) |
-| Private vulnerability reporting | `repos/{owner}/{repo}/private-vulnerability-reporting` → `.enabled` | `true` |
+| Control                         | API                                                                 | Expected                                             |
+| ------------------------------- | ------------------------------------------------------------------- | ---------------------------------------------------- |
+| Dependabot alerts               | `repos/{owner}/{repo}/vulnerability-alerts`                         | HTTP 204 (enabled)                                   |
+| Dependabot security updates     | `repos/{owner}/{repo}/automated-security-fixes` → `.enabled`        | `true` (HTTP 200 with JSON body `{enabled, paused}`) |
+| Private vulnerability reporting | `repos/{owner}/{repo}/private-vulnerability-reporting` → `.enabled` | `true`                                               |
 
 **`vulnerability-alerts`** is a 204-vs-404 endpoint — no body. Use `gh api -i` and grep for `HTTP/2.0 204` (or `HTTP/1.1 204`). 404 means disabled.
 

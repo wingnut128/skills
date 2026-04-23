@@ -2,14 +2,14 @@
 
 Which templates to combine for a given primary stack.
 
-| Stack   | Detect                                  | .gitignore extra      | Dep config             |
-|---------|-----------------------------------------|-----------------------|------------------------|
-| bun     | `package.json` + `bun.lock` or `bunfig` | `gitignore-bun`       | `dependabot-bun.yml`   |
-| node    | `package.json` + no bun lock            | `gitignore-node`      | `dependabot-node.yml`  |
-| rust    | `Cargo.toml`                            | `gitignore-rust`      | `dependabot-rust.yml`  |
-| python  | `pyproject.toml` or `requirements.txt`  | `gitignore-python`    | `dependabot-python.yml`|
-| go      | `go.mod`                                | `gitignore-go`        | `dependabot-go.yml`    |
-| mixed   | multiple of the above                   | concat applicable     | concat applicable      |
+| Stack  | Detect                                  | .gitignore extra   | Dep config              |
+| ------ | --------------------------------------- | ------------------ | ----------------------- |
+| bun    | `package.json` + `bun.lock` or `bunfig` | `gitignore-bun`    | `dependabot-bun.yml`    |
+| node   | `package.json` + no bun lock            | `gitignore-node`   | `dependabot-node.yml`   |
+| rust   | `Cargo.toml`                            | `gitignore-rust`   | `dependabot-rust.yml`   |
+| python | `pyproject.toml` or `requirements.txt`  | `gitignore-python` | `dependabot-python.yml` |
+| go     | `go.mod`                                | `gitignore-go`     | `dependabot-go.yml`     |
+| mixed  | multiple of the above                   | concat applicable  | concat applicable       |
 
 ## Always applied
 

@@ -53,6 +53,7 @@ gh pr create --repo O/R --head NEW --base BRANCH --title "..." --body "..."
 ```
 
 Caveats:
+
 - One file per PUT (multi-file → Git Data API or multiple commits).
 - **Commits are unsigned.** PAT-authored commits via Contents API don't get signed — no web-flow signature, no personal signature. Only web-UI edits and GitHub Apps with commit-signing produce verified commits via API. If signature matters, use the clone route.
 

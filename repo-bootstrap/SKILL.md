@@ -110,14 +110,14 @@ Pull each file from `templates/` in this skill, substituting placeholders:
 
 Files to write (only if absent):
 
-| File | Template | Notes |
-|---|---|---|
-| `LICENSE` | `templates/LICENSE-<choice>.txt` | |
-| `SECURITY.md` | `templates/SECURITY.md` | |
-| `.github/CODEOWNERS` | `templates/CODEOWNERS` | |
-| `.gitignore` | Combine `templates/gitignore-security-base` + `templates/gitignore-<stack>` | **Always append the security base**, even if `.gitignore` already exists — merge intelligently, don't duplicate entries the user already has |
-| `.github/dependabot.yml` | `templates/dependabot-<stack>.yml` | |
-| `CLAUDE.md` | `templates/CLAUDE.md.stub` | Only if absent; this is a stub, not a full template |
+| File                     | Template                                                                    | Notes                                                                                                                                        |
+| ------------------------ | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `LICENSE`                | `templates/LICENSE-<choice>.txt`                                            |                                                                                                                                              |
+| `SECURITY.md`            | `templates/SECURITY.md`                                                     |                                                                                                                                              |
+| `.github/CODEOWNERS`     | `templates/CODEOWNERS`                                                      |                                                                                                                                              |
+| `.gitignore`             | Combine `templates/gitignore-security-base` + `templates/gitignore-<stack>` | **Always append the security base**, even if `.gitignore` already exists — merge intelligently, don't duplicate entries the user already has |
+| `.github/dependabot.yml` | `templates/dependabot-<stack>.yml`                                          |                                                                                                                                              |
+| `CLAUDE.md`              | `templates/CLAUDE.md.stub`                                                  | Only if absent; this is a stub, not a full template                                                                                          |
 
 For `.gitignore` specifically: read the existing file if any, parse it into a set of lines, union with the template lines, preserve the existing section comments, and write the union back. The goal is that re-running the skill on a repo that already has the security block doesn't create duplicate lines.
 
@@ -145,6 +145,7 @@ If yes, apply:
 **Rust toolchain note.** The Rust templates use inline `rustup update stable && rustup default stable` instead of `dtolnay/rust-toolchain@stable`. The action's only ref is a rolling branch, which — once SHA-pinned for pin-check compliance — freezes the toolchain and can't be dependabot-updated. `rustup` on the GitHub-hosted runner is pre-installed and picks up the latest stable on every run, with no `uses:` line to pin.
 
 1. **Pin action SHAs first.** Look up current SHAs for:
+
    - `step-security/harden-runner` (latest v2.x)
    - `actions/checkout` (latest v6+)
    - `actions/cache` (latest v5+)
@@ -161,27 +162,28 @@ If yes, apply:
 
 2. **Write templates**, substituting placeholders:
 
-   | File | Template | Placeholders |
-   |---|---|---|
-   | `release-plz.toml` | `templates/release-plz.toml` | (none) |
-   | `.github/workflows/release-plz.yml` | `templates/release-plz.yml` | `{{DEFAULT_BRANCH}}`, `{{HARDEN_RUNNER_SHA/VERSION}}`, `{{CHECKOUT_SHA/VERSION}}`, `{{RELEASE_PLZ_SHA/VERSION}}` |
-   | `.github/workflows/release.yml` | `templates/release-tag-build.yml` | Above plus `{{CRATE_NAME}}`, `{{CACHE_SHA/VERSION}}`, `{{UPLOAD_ARTIFACT_SHA/VERSION}}`, `{{DOWNLOAD_ARTIFACT_SHA/VERSION}}` |
+   | File                                | Template                          | Placeholders                                                                                                                 |
+   | ----------------------------------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+   | `release-plz.toml`                  | `templates/release-plz.toml`      | (none)                                                                                                                       |
+   | `.github/workflows/release-plz.yml` | `templates/release-plz.yml`       | `{{DEFAULT_BRANCH}}`, `{{HARDEN_RUNNER_SHA/VERSION}}`, `{{CHECKOUT_SHA/VERSION}}`, `{{RELEASE_PLZ_SHA/VERSION}}`             |
+   | `.github/workflows/release.yml`     | `templates/release-tag-build.yml` | Above plus `{{CRATE_NAME}}`, `{{CACHE_SHA/VERSION}}`, `{{UPLOAD_ARTIFACT_SHA/VERSION}}`, `{{DOWNLOAD_ARTIFACT_SHA/VERSION}}` |
 
 3. **If a `release.yml` already exists**, don't overwrite — show the user what the new tag-triggered flow looks like and ask whether to replace. The existing one probably uses Cargo.toml-diff detection, which conflicts with release-plz.
 
 4. **Tell the user to create a PAT**:
+
    > Before merging, create a **fine-grained PAT** (github.com → Settings → Developer settings → Personal access tokens → Fine-grained) scoped to this repo with **Contents: Read and write** and **Pull requests: Read and write**. Store it as repo secret `RELEASE_PLZ_TOKEN`. `GITHUB_TOKEN` can't trigger CI on the Release PR, which is why the PAT is needed.
 
 5. **Verify on first push to main**: the `Release-plz` workflow should run and open a PR targeting the next version. If it doesn't appear within ~1 minute, check `gh run list --workflow=release-plz.yml` for errors (most common cause: PAT missing or missing permissions).
 
 **Language mapping (pick one based on stack detected in step 3):**
 
-| Stack | Tool | Template exists in this skill |
-|---|---|---|
-| Rust binary | release-plz | ✅ |
-| Rust library (crates.io) | release-plz with `publish = true` + `CARGO_REGISTRY_TOKEN` | Adapt from Rust binary template |
-| Node / Python / Go | release-please (`googleapis/release-please-action`) | Not yet — adapt the Rust workflow structure, swap the action and config file |
-| Go binary | goreleaser if user prefers, otherwise release-please + tag-triggered `go build` matrix | Not yet |
+| Stack                    | Tool                                                                                   | Template exists in this skill                                                |
+| ------------------------ | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Rust binary              | release-plz                                                                            | ✅                                                                           |
+| Rust library (crates.io) | release-plz with `publish = true` + `CARGO_REGISTRY_TOKEN`                             | Adapt from Rust binary template                                              |
+| Node / Python / Go       | release-please (`googleapis/release-please-action`)                                    | Not yet — adapt the Rust workflow structure, swap the action and config file |
+| Go binary                | goreleaser if user prefers, otherwise release-please + tag-triggered `go build` matrix | Not yet                                                                      |
 
 If no template exists yet for the user's stack, write the workflow by analogy to `release-plz.yml` (same structure: release-PR job + release job + separate tag-triggered build job). Don't bluff — tell the user this is the first time you're wiring their stack and to review carefully.
 
@@ -205,7 +207,7 @@ High-level:
    - `restrictions`: null
 3. **Only if the repo is public**: `PUT /repos/{owner}/{repo}/actions/permissions/fork-pr-contributor-approval` with `approval_policy: all_external_contributors`. This API rejects the call on private repos with "Fork PR approval is not allowed for private repositories" — private repos can't be forked by outside collaborators, so the setting is moot. Detect private vs public via `gh repo view --json isPrivate` before calling.
 4. `PUT /repos/{owner}/{repo}/actions/permissions/workflow` with `default_workflow_permissions: read`
-5. **Only if the repo is private or internal**: `PUT /repos/{owner}/{repo}/actions/permissions/access` with `access_level: none` (private user-owned, or private org-owned without shared workflows) or `organization` (private org-owned with intentionally shared workflows). Restricts which *other* repos can consume this repo's reusable workflows. This API returns HTTP 422 on public repos — detect via `gh repo view --json visibility` and skip when `visibility == "public"`.
+5. **Only if the repo is private or internal**: `PUT /repos/{owner}/{repo}/actions/permissions/access` with `access_level: none` (private user-owned, or private org-owned without shared workflows) or `organization` (private org-owned with intentionally shared workflows). Restricts which _other_ repos can consume this repo's reusable workflows. This API returns HTTP 422 on public repos — detect via `gh repo view --json visibility` and skip when `visibility == "public"`.
 6. `PUT /repos/{owner}/{repo}/vulnerability-alerts` (enables Dependabot alerts)
 7. `PUT /repos/{owner}/{repo}/automated-security-fixes` (enables Dependabot security updates)
 8. **Only if public OR private-with-GHAS**: `PATCH /repos/{owner}/{repo}` with `security_and_analysis.secret_scanning.status: enabled` and `secret_scanning_push_protection.status: enabled`. On private repos without GitHub Advanced Security, this returns HTTP 422 — detect and skip with a note. Check via `gh api repos/{owner}/{repo} --jq '.security_and_analysis.advanced_security.status'`.
@@ -294,11 +296,11 @@ Not a hard requirement — skip when the repo only runs trusted first-party code
 
 **When to apply each piece:**
 
-| Template | Apply when | Skip when |
-|---|---|---|
-| `templates/Dockerfile.chainguard` | Repo builds + distributes a container image | No container distribution; or existing Dockerfile is already distroless and digest-pinned |
-| `templates/workflows/image-scan.yml` | Dockerfile is present (upstream or template-applied) | No Dockerfile; or user already runs a paid scanner (Snyk, Prisma) they prefer |
-| `templates/workflows/pin-check.yml` | Any repo with `.github/workflows/**` | Repo has no Actions workflows |
+| Template                             | Apply when                                           | Skip when                                                                                 |
+| ------------------------------------ | ---------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `templates/Dockerfile.chainguard`    | Repo builds + distributes a container image          | No container distribution; or existing Dockerfile is already distroless and digest-pinned |
+| `templates/workflows/image-scan.yml` | Dockerfile is present (upstream or template-applied) | No Dockerfile; or user already runs a paid scanner (Snyk, Prisma) they prefer             |
+| `templates/workflows/pin-check.yml`  | Any repo with `.github/workflows/**`                 | Repo has no Actions workflows                                                             |
 
 ### Dockerfile.chainguard
 
