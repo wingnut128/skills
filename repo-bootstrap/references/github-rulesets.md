@@ -163,6 +163,5 @@ gh api "repos/$OWNER/$REPO/rules/branches/$BRANCH"
 
 ## Skip conditions
 
-- **Forgejo:** no ruleset equivalent. Forgejo has branch protections only. Skip this reference entirely for Forgejo repos.
 - **User-owned repos:** all ruleset features work, but `OrganizationAdmin` bypass_actor type is meaningless (no org exists).
 - **Enterprise rulesets** (`POST /enterprises/{enterprise}/rulesets`) exist for GHEC but are out of scope here.

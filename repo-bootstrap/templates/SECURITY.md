@@ -3,7 +3,7 @@
 ## Reporting a Vulnerability
 
 Please report security vulnerabilities privately by opening a
-[security advisory]({{FORGE_URL}}/{{OWNER}}/{{REPO}}/security/advisories/new).
+[security advisory](https://github.com/{{OWNER}}/{{REPO}}/security/advisories/new).
 
 Do **not** open a public issue for security reports.
 
